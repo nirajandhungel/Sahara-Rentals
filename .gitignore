@@ -1,0 +1,14 @@
+# Ignore target folder (compiled files)
+target/
+
+# Ignore IDE-specific files (VS Code, IntelliJ, Eclipse)
+.vscode/
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# Ignore OS-specific files
+Thumbs.db
+.DS_Store

@@ -1,0 +1,100 @@
+package com.sahara.service;
+
+// package com.sahara.Middleware;
+
+import java.util.regex.Pattern;
+
+import com.sahara.config.UserRegistration;
+import com.sahara.notification.Notifier;
+
+public class Registration {
+
+    // Regular expressions for email and phone validations
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^\\d{10}$");
+
+    public static boolean registrationHandler(String username, String password, String phone, String email,String address, String role) {
+        try {
+            // Username validation
+            if (username.isEmpty()) {
+                // System.out.println("Username is required.");
+                Notifier.showError("❌ Registration failed! Username is required.");
+
+                return false;
+            }
+            if (username.length() < 4 || username.length() > 20) {
+                // System.out.println("Username must be between 4 and 20 characters.");
+                Notifier.showError("❌ Registration failed! Username must be between 4 and 20 characters.");
+
+                return false;
+            }
+
+            // Password validation
+            if (password.isEmpty()) {
+                // System.out.println("Password is required.");
+                Notifier.showError("❌ Registration failed! Password is required.");
+
+                return false;
+            }
+            if (password.length() < 8) {
+                Notifier.showError("❌ Registration failed! Password must be at least 8 characters long.");
+                return false;
+            }
+            if (!password.matches(".*[A-Z].*") || !password.matches(".*[a-z].*") ||!password.matches(".*\\d.*") || !password.matches(".*[@#$%^&+=!].*")) {
+                Notifier.showError("❌ Registration failed! Password must include uppercase, lowercase, number, and special character.");
+                return false;
+            }
+
+            // Email validation
+            if (email.isEmpty()) {
+                Notifier.showError("❌ Registration failed! Email is required.");
+                return false;
+            }
+            if (!EMAIL_PATTERN.matcher(email).matches()) {
+                Notifier.showError("❌ Registration failed! Invalid email format.");
+                return false;
+            }
+
+            // Phone validation
+            if (phone.isEmpty()) {
+                Notifier.showError("❌ Registration failed! Phone number is required.");
+                return false;
+            }
+            if (!PHONE_PATTERN.matcher(phone).matches()) {
+                Notifier.showError("❌ Registration failed! Phone number must be 10 digits.");
+
+                return false;
+            }
+
+            // Address validation
+            if (address.isEmpty()) {
+                Notifier.showError("❌ Registration failed! Address is required.");
+                return false;
+            }
+            if (address.length() < 5) {
+                Notifier.showError("❌ Registration failed! Address must be at least 5 characters long.");
+                return false;
+            }
+
+            // 1️⃣ Hash the password using BCrypt before sending to the Data Layer
+            String hashedPassword = Authenticator.hashPassword(password);
+
+            // 2️⃣ Pass the hashed password to the Data Layer
+            UserRegistration.registerUser(username, hashedPassword, phone, email, address, role);
+
+            // 3️⃣ Notify user of success after registration
+            Notifier.showSuccess("Registration successful! Welcome, " + username + ".");
+            System.out.println("User registered successfully!");
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("Error registering user: " + e.getMessage());
+            return false;
+        }
+    }
+}
+
+
+// private String role = "customer";
