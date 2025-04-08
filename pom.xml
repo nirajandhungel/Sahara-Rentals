@@ -12,8 +12,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>23</maven.compiler.source>
+        <maven.compiler.target>23</maven.compiler.target>
         <javafx.version>17</javafx.version>
     </properties>
 
@@ -61,7 +61,23 @@
             <version>4.11</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- iText -->
+        <!-- https://mvnrepository.com/artifact/com.itextpdf/itextpdf -->
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>itextpdf</artifactId>
+            <version>5.5.13.3</version>
+        </dependency>
+        
     </dependencies>
+
+    <!-- <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories> -->
 
     <build>
         <plugins>
@@ -88,11 +104,11 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>com.sahara.App</mainClass> <!-- Ensure this points to your actual main class -->
+                    <mainClass>com.sahara.App</mainClass>
                     <classpathScope>runtime</classpathScope>
                     <arguments>
                         <argument>--module-path</argument>
-                        <argument>${env.JAVA_HOME}/lib</argument> <!-- This will point to the JavaFX library -->
+                        <argument>${env.JAVA_HOME}/lib</argument>
                         <argument>--add-modules</argument>
                         <argument>javafx.controls,javafx.fxml</argument>
                     </arguments>

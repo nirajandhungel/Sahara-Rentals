@@ -55,7 +55,7 @@ public class LoginController {
 
         // Login Button
         Button loginButton = new Button("Log in");
-        loginButton.getStyleClass().add("login-button");
+        loginButton.getStyleClass().add("primary-button");
         grid.add(loginButton, 1, 3);
 
         // Registration Link
@@ -64,20 +64,19 @@ public class LoginController {
         grid.add(registrationLabel, 1, 4);
 
         // Login button action
-        loginButton.setOnAction(e -> {
+        loginButton.setOnAction(_ -> {
             String username = userNameTextField.getText();
             String password = passwordField.getText();
 
             User authenticatedUser = Authenticator.authenticate(username, password);
             if (authenticatedUser != null) {
-                System.out.println("Authenticated User: " + authenticatedUser.role());
-                // if (authenticatedUser.role().equals("admin")) {
-                //     AdminController adminController = new AdminController(authenticatedUser);
-                //     AppNavigator.loadView(adminController.getView(rootLayout));
-                //     rootLayout.setCenter(adminController.getView(rootLayout));
-                // } 
-                // else
-                 if (authenticatedUser.role().equals("vmt")) {
+                System.out.println("Authenticated User: " + authenticatedUser.getRole());
+                if (authenticatedUser.getRole().equals("admin")) {
+                    AdminController adminController = new AdminController(authenticatedUser);
+                    AppNavigator.loadView(adminController.getView(rootLayout));
+                    rootLayout.setCenter(adminController.getView(rootLayout));
+                } 
+                else if (authenticatedUser.getRole().equals("vmt")) {
                     VMTController VMTController = new VMTController(authenticatedUser);
                     AppNavigator.loadView(VMTController.getView(rootLayout));
                     rootLayout.setCenter(VMTController.getView(rootLayout));
@@ -91,7 +90,7 @@ public class LoginController {
         });
 
         // Registration label click action
-        registrationLabel.setOnMouseClicked(event -> {
+        registrationLabel.setOnMouseClicked(_ -> {
             AppNavigator.loadView(new RegistrationController().getView(rootLayout));
         });
 

@@ -7,14 +7,19 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 
-
 public class RentalItemView extends HBox {
     public RentalItemView(String vehicleName, String period, String cost, String imagePath) {
         super(20);
         getStyleClass().add("rental-item");
         setAlignment(Pos.CENTER_LEFT);
 
-        ImageView carImage = new ImageView(new Image(getClass().getResourceAsStream(imagePath)));
+        ImageView carImage;
+        try {
+            carImage = new ImageView(new Image(getClass().getResourceAsStream(imagePath)));
+        } catch (NullPointerException e) {
+            System.err.println("Image not found: " + imagePath + ". Using default image.");
+            carImage = new ImageView(new Image(getClass().getResourceAsStream("/images/default.png")));
+        }
         carImage.setFitWidth(100);
         carImage.setFitHeight(75);
 

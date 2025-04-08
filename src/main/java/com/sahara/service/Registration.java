@@ -20,13 +20,13 @@ public class Registration {
             // Username validation
             if (username.isEmpty()) {
                 // System.out.println("Username is required.");
-                Notifier.showError("❌ Registration failed! Username is required.");
+                Notifier.showError("❌ Registration Failed ! Username is required.");
 
                 return false;
             }
             if (username.length() < 4 || username.length() > 20) {
                 // System.out.println("Username must be between 4 and 20 characters.");
-                Notifier.showError("❌ Registration failed! Username must be between 4 and 20 characters.");
+                Notifier.showError("❌ Registration Failed ! Username must be between 4 and 20 characters.");
 
                 return false;
             }
@@ -34,47 +34,47 @@ public class Registration {
             // Password validation
             if (password.isEmpty()) {
                 // System.out.println("Password is required.");
-                Notifier.showError("❌ Registration failed! Password is required.");
+                Notifier.showError("❌ Registration Failed ! Password is required.");
 
                 return false;
             }
             if (password.length() < 8) {
-                Notifier.showError("❌ Registration failed! Password must be at least 8 characters long.");
+                Notifier.showError("❌ Registration Failed ! Password must be at least 8 characters long.");
                 return false;
             }
             if (!password.matches(".*[A-Z].*") || !password.matches(".*[a-z].*") ||!password.matches(".*\\d.*") || !password.matches(".*[@#$%^&+=!].*")) {
-                Notifier.showError("❌ Registration failed! Password must include uppercase, lowercase, number, and special character.");
+                Notifier.showError("❌ Registration Failed ! Password must include uppercase, lowercase, number, and special character.");
                 return false;
             }
 
             // Email validation
             if (email.isEmpty()) {
-                Notifier.showError("❌ Registration failed! Email is required.");
+                Notifier.showError("❌ Registration Failed ! Email is required.");
                 return false;
             }
             if (!EMAIL_PATTERN.matcher(email).matches()) {
-                Notifier.showError("❌ Registration failed! Invalid email format.");
+                Notifier.showError("❌ Registration Failed ! Invalid email format.");
                 return false;
             }
 
             // Phone validation
             if (phone.isEmpty()) {
-                Notifier.showError("❌ Registration failed! Phone number is required.");
+                Notifier.showError("❌ Registration Failed ! Phone number is required.");
                 return false;
             }
             if (!PHONE_PATTERN.matcher(phone).matches()) {
-                Notifier.showError("❌ Registration failed! Phone number must be 10 digits.");
+                Notifier.showError("❌ Registration Failed ! Phone number must be 10 digits.");
 
                 return false;
             }
 
             // Address validation
             if (address.isEmpty()) {
-                Notifier.showError("❌ Registration failed! Address is required.");
+                Notifier.showError("❌ Registration Failed ! Address is required.");
                 return false;
             }
             if (address.length() < 5) {
-                Notifier.showError("❌ Registration failed! Address must be at least 5 characters long.");
+                Notifier.showError("❌ Registration Failed ! Address must be at least 5 characters long.");
                 return false;
             }
 

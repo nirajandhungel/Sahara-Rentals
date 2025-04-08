@@ -14,7 +14,13 @@ public class VehicleCard extends VBox {
         getStyleClass().add("vehicle-card");
 
         // Vehicle Image
-        ImageView imageView = new ImageView(new Image(getClass().getResourceAsStream(vehicle.getImagePath())));
+        ImageView imageView;
+        try {
+            imageView = new ImageView(new Image(getClass().getResourceAsStream(vehicle.getImagePath())));
+        } catch (NullPointerException e) {
+            System.err.println("Image not found: " + vehicle.getImagePath() + ". Using default image.");
+            imageView = new ImageView(new Image(getClass().getResourceAsStream("/images/default.png")));
+        }
         imageView.setFitWidth(200);
         imageView.setFitHeight(150);
         imageView.getStyleClass().add("vehicle-image");
@@ -30,7 +36,7 @@ public class VehicleCard extends VBox {
         // Action Button
         Button actionButton = new Button(buttonText);
         actionButton.getStyleClass().add("action-button");
-        actionButton.setOnAction(e -> buttonAction.run());
+        actionButton.setOnAction(_ -> buttonAction.run());
 
         getChildren().addAll(imageView, nameLabel, detailsLabel, actionButton);
     }
