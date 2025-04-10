@@ -151,14 +151,100 @@ public class VehicleDAO {
 
 
 
-    public static boolean updateVehicle(Vehicle vehicle) {
-        String query = "UPDATE vehicles SET status = ? WHERE id = ?";
-    
+    public static Vehicle getVehicleById(int vehicleId) {
+        String query = "SELECT * FROM vehicles WHERE id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
     
+            stmt.setInt(1, vehicleId);
+            ResultSet rs = stmt.executeQuery();
+    
+            if (rs.next()) {
+                // Determine the type of vehicle and return the appropriate subclass
+                String type = rs.getString("type");
+                switch (type) {
+                    case "Car":
+                        return new Car(
+                            rs.getInt("id"),
+                            rs.getString("type"),
+                            rs.getString("brand_model"),
+                            rs.getInt("model_year"),
+                            rs.getDouble("price_per_day"),
+                            rs.getString("number"),
+                            rs.getString("image_path"),
+                            rs.getString("status"),
+                            rs.getString("details")
+                        );
+                    case "Bike":
+                        return new Bike(
+                            rs.getInt("id"),
+                            rs.getString("type"),
+                            rs.getString("brand_model"),
+                            rs.getInt("model_year"),
+                            rs.getDouble("price_per_day"),
+                            rs.getString("number"),
+                            rs.getString("image_path"),
+                            rs.getString("status"),
+                            rs.getString("details")
+                        );
+                    case "ElectricVehicle":
+                        return new ElectricVehicle(
+                            rs.getInt("id"),
+                            rs.getString("type"),
+                            rs.getString("brand_model"),
+                            rs.getInt("model_year"),
+                            rs.getDouble("price_per_day"),
+                            rs.getString("number"),
+                            rs.getString("image_path"),
+                            rs.getString("status"),
+                            rs.getString("details")
+                        );
+                    default:
+                        throw new IllegalArgumentException("Unknown vehicle type: " + type);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching vehicle by ID: " + e.getMessage());
+        }
+        return null;
+    }
+
+
+
+    public static boolean updateVehicleStatus(Vehicle vehicle) {
+        String query = "UPDATE vehicles SET status = ? WHERE id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+    
+            System.out.println("Updating vehicle with ID: " + vehicle.getId() + ", Status: " + vehicle.getStatus());
+    
             stmt.setString(1, vehicle.getStatus());
             stmt.setInt(2, vehicle.getId());
+    
+            int rowsUpdated = stmt.executeUpdate();
+            System.out.println("Rows updated: " + rowsUpdated);
+    
+            return rowsUpdated > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating vehicle: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean updateVehicle(Vehicle vehicle) {
+        String query = "UPDATE vehicles SET type = ?, brand_model = ?, model_year =?, price_per_day=?, number=?, image_path=?, status=?, details=? WHERE id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+    
+            stmt.setString(1, vehicle.getType());
+            stmt.setString(2, vehicle.getBrand());
+            stmt.setInt(3, vehicle.getYear());
+            stmt.setDouble(4, vehicle.getPrice());
+            stmt.setString(5, vehicle.getNumber());
+            stmt.setString(6, vehicle.getImagePath());
+            stmt.setString(7, vehicle.getStatus());
+            stmt.setString(8, vehicle.getDetails());
+            stmt.setInt(9, vehicle.getId());
     
             int rowsUpdated = stmt.executeUpdate();
             return rowsUpdated > 0;

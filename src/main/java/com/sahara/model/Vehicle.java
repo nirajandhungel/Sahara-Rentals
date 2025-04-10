@@ -1,7 +1,5 @@
 package com.sahara.model;
 
-import java.io.ObjectInputFilter;
-
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -51,6 +49,13 @@ public abstract class Vehicle {
         return parts.length > 0 ? parts[0] : ""; // Return the first word as the make
     }
 
+    public void setMake(String make) {
+        String[] parts = getBrand().split(" ", 2);
+        String model = parts.length > 1 ? parts[1] : "";
+        this.brand_model.set(make + " " + model);
+    }
+    
+
     public String getModel() {
         String[] parts = getBrand().split(" ", 2);
         return parts.length > 1 ? parts[1] : ""; // Return the second word as the model
@@ -67,6 +72,20 @@ public abstract class Vehicle {
     public String getStatus() { return status.get(); }
     public String getDetails() { return details.get(); }
 
+
+    // Getters for properties
+
+    public void setId(int id) { this.id.set(id); }
+    public void setType(String type) { this.type.set(type); }
+    public void setBrand(String brand) { this.brand_model.set(brand); }
+    public void setYear(int year) { this.model_year.set(year); }
+    public void setPrice(double price) { this.price.set(price); }
+    public void setNumber(String number) { this.number.set(number); }
+    public void setImagePath(String path) { this.imagePath.set(path); }
+    public void setStatus(String status) { this.status.set(status); }
+    public void setDetails(String details) { this.details.set(details); }
+
+
     // Additional methods for `UserController`
     public String imagePath() { return getImagePath(); }
     public String model() { return getBrand(); }
@@ -74,9 +93,6 @@ public abstract class Vehicle {
     public String transmission() { return "Automatic"; } // Placeholder
     public int seats() { return 4; } // Placeholder
     public double dailyRate() { return getPrice(); }
-     // Setter for status
-     public void setStatus(String status) {
-        this.status.set(status); // ✅ Correct way to update a StringProperty
-    }
+     
 
 }

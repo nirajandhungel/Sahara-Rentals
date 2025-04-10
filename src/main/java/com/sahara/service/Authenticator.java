@@ -5,7 +5,8 @@ package com.sahara.service;
 import org.mindrot.jbcrypt.BCrypt;
 
 import com.sahara.model.User;
-import com.sahara.notification.Notifier;
+import com.sahara.view.util.AlertUtils;
+import javafx.scene.control.Alert;
 import com.sahara.repository.UserDAO;
 
 /**
@@ -17,45 +18,57 @@ import com.sahara.repository.UserDAO;
 public class Authenticator {
     public static User authenticate(String username, String password) {
 
-        // Step 1: Fetch user from database using UserDAO
-        User user = UserDAO.getUserByUsername(username);
-
-        // Step 2: If no user is found, authentication fails immediately
-        if (user == null) {
-            Notifier.showError("❌ User not found !");
+        // Username validation
+        if (username.isEmpty()) {
+            // Error message
+            AlertUtils.showAlert(Alert.AlertType.ERROR, "Login Failed", "Username is required.");
             return null;
         }
 
-        // Step 2: Hash the input password
-        String storedHashedPassword = user.getHashedPassword();
-        // System.out.println("Stored Hashed password"+storedHashedPassword+"End");
+        // Password validation
+        if (password.isEmpty()) {
+            // Error message
+            AlertUtils.showAlert(Alert.AlertType.ERROR, "Login Failed", "Password is required.");
+            return null;
+        }
 
-        // 4️⃣ Step 4: Use BCrypt to compare the plain-text password with the hashed
-        // password
+        //  Fetch user from database using UserDAO
+        User user = UserDAO.getUserByUsername(username);
+
+        // If no user is found, authentication fails immediately
+        if (user == null) {
+            // Error message using AlertUtils
+            AlertUtils.showAlert(Alert.AlertType.ERROR, "Invalid ", "User not found");
+
+            return null;
+        }
+
+        //  Hash the input password
+        String storedHashedPassword = user.getHashedPassword();
+
+        // Use BCrypt to compare the plain-text password with the hashed password
         boolean passwordMatches = BCrypt.checkpw(password, storedHashedPassword);
 
-        // 5️⃣ Step 5: Return the result and optionally perform other actions
+        // Return the result and optionally perform other actions
         if (passwordMatches) {
-            Notifier.showSuccess("✅ Successful login for user: " + username + "!");
+            // success login
+
+            AlertUtils.showAlert(Alert.AlertType.INFORMATION,"Success","Successfull login for user: "+username+".");
 
             return user;
         } else {
-            Notifier.showError("❌ Incorrect password for user: " + username);
+            AlertUtils.showAlert(Alert.AlertType.ERROR, "Invalid ", "Incorrect password for user: "+username);
+
             return null;
         }
     }
 
-    /**
-     * Helper method for hashing a password before saving it to the database.
-     * Should be used during user registration.
-     * 
-     * @param plainPassword The user's plain-text password.
-     * @return A hashed password with salt using BCrypt.
-     */
+    
+    //   Helper method for hashing a password before saving it to the database.
+   
     public static String hashPassword(String plainPassword) {
         // BCrypt gensalt generates a random salt for each password hash.
         String hashedPassword = BCrypt.hashpw(plainPassword, BCrypt.gensalt(12)); // 12 is the work factor (cost). You can increase for
-        // System.out.println("Hashed password"+hashedPassword+"End");
         
         return hashedPassword;                                                       // more security.
     }

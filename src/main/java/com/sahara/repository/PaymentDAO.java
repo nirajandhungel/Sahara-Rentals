@@ -1,11 +1,12 @@
 package com.sahara.repository;
 
 import java.sql.Connection;
-import java.sql.Date;
+// import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement; // Explicitly import java.sql.Date
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +43,7 @@ public class PaymentDAO {
                 payment.setVehicleName(rs.getString("vehicle"));
                 payment.setAmount(rs.getDouble("amount"));
                 payment.setPaymentMethod(paymentMethod);
-                payment.setPaymentDate(rs.getString("payment_date"));
+                payment.setPaymentDate(rs.getTimestamp("payment_date")); // Use java.sql.Timestamp
                 payment.setStatus(rs.getString("status"));
                 payment.setProcessedBy(rs.getString("processed_by"));
     
@@ -63,8 +64,10 @@ public class PaymentDAO {
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
     
-            stmt.setDate(1, Date.valueOf(fromDate));
-            stmt.setDate(2, Date.valueOf(toDate));
+            // Use Timestamp with start of day for proper date range inclusion
+            stmt.setTimestamp(1, Timestamp.valueOf(fromDate.atStartOfDay()));
+            stmt.setTimestamp(2, Timestamp.valueOf(toDate.atStartOfDay()));
+            
             ResultSet rs = stmt.executeQuery();
     
             while (rs.next()) {
@@ -86,7 +89,7 @@ public class PaymentDAO {
                 payment.setVehicleName(rs.getString("vehicle"));
                 payment.setAmount(rs.getDouble("amount"));
                 payment.setPaymentMethod(paymentMethod);
-                payment.setPaymentDate(rs.getString("payment_date"));
+                payment.setPaymentDate(rs.getTimestamp("payment_date"));
                 payment.setStatus(rs.getString("status"));
                 payment.setProcessedBy(rs.getString("processed_by"));
     
@@ -98,8 +101,6 @@ public class PaymentDAO {
     
         return payments;
     }
-
-
 
     public static boolean addPayment(Payment payment) {
         String query = "INSERT INTO payments (rental_id, user_id, vehicle, amount, payment_method, payment_date, status, processed_by) " +
@@ -113,7 +114,10 @@ public class PaymentDAO {
             stmt.setString(3, payment.getVehicleName());
             stmt.setDouble(4, payment.getAmount());
             stmt.setString(5, payment.getPaymentMethod());
-            stmt.setString(6, payment.getPaymentDate());
+            // Convert payment date to start of day (midnight) for consistency
+            stmt.setTimestamp(6, Timestamp.valueOf(
+                payment.getPaymentDate().toLocalDateTime().toLocalDate().atStartOfDay()
+            ));
             stmt.setString(7, payment.getStatus());
             stmt.setString(8, payment.getProcessedBy());
     
@@ -132,26 +136,23 @@ public class PaymentDAO {
         }
     }
 
-
-
-        // Fetch total revenue and total payments
-        public static double[] getTotalRevenueAndPayments() {
-            String query = "SELECT SUM(amount) AS totalRevenue, COUNT(id) AS totalPayments FROM payments";
-            double[] stats = new double[2]; // [0] = totalRevenue, [1] = totalPayments
+    // Fetch total revenue and total payments
+    public static double[] getTotalRevenueAndPayments() {
+        String query = "SELECT SUM(amount) AS totalRevenue, COUNT(id) AS totalPayments FROM payments";
+        double[] stats = new double[2]; // [0] = totalRevenue, [1] = totalPayments
     
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(query);
-                 ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
     
-                if (rs.next()) {
-                    stats[0] = rs.getDouble("totalRevenue"); // Total revenue
-                    stats[1] = rs.getInt("totalPayments");  // Total payments
-                }
-            } catch (SQLException e) {
-                System.err.println("Error fetching total revenue and payments: " + e.getMessage());
+            if (rs.next()) {
+                stats[0] = rs.getDouble("totalRevenue"); // Total revenue
+                stats[1] = rs.getInt("totalPayments");  // Total payments
             }
-    
-            return stats;
+        } catch (SQLException e) {
+            System.err.println("Error fetching total revenue and payments: " + e.getMessage());
         }
-
+    
+        return stats;
+    }
 }

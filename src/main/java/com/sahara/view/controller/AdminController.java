@@ -1,7 +1,13 @@
 package com.sahara.view.controller;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,8 +21,10 @@ import com.sahara.repository.VehicleDAO;
 import com.sahara.service.payment.CashPayment;
 import com.sahara.service.payment.OnlinePayment;
 import com.sahara.service.payment.Payment;
+import com.sahara.view.util.AlertUtils;
 import com.sahara.view.util.AppNavigator;
 
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -68,39 +76,39 @@ public class AdminController {
         this.rootLayout = rootLayout;
         BorderPane adminDashboard = new BorderPane();
         adminDashboard.getStyleClass().add("admin-dashboard-root");
-
+    
         // Header Section
         adminDashboard.setTop(createHeader());
-
+    
         // Main Content - Tabbed Interface
         TabPane mainTabs = new TabPane();
         mainTabs.getStyleClass().add("admin-tab-pane");
-
+    
         // Users Management Tab
         Tab usersTab = new Tab("Total Users");
         usersTab.setContent(createUsersManagementTab());
         usersTab.setClosable(false);
-
+    
         // Vehicles Management Tab
         Tab vehiclesTab = new Tab("Total Vehicles");
         vehiclesTab.setContent(createVehiclesManagementTab());
         vehiclesTab.setClosable(false);
-
+    
         // Rentals Management Tab
         Tab rentalsTab = new Tab("All Rentals");
         rentalsTab.setContent(createRentalsManagementTab());
         rentalsTab.setClosable(false);
-
+    
         // Payments Management Tab
         Tab paymentsTab = new Tab("Total Payments");
-        paymentsTab.setContent(createPaymentsManagementTab()); // Ensure this is called
+        paymentsTab.setContent(createPaymentsManagementTab());
         paymentsTab.setClosable(false);
-
-        // updateSummaryStats();
-
+    
         mainTabs.getTabs().addAll(usersTab, vehiclesTab, rentalsTab, paymentsTab);
         adminDashboard.setCenter(mainTabs);
-
+    
+        this.rootLayout.setCenter(adminDashboard); // Ensure TabPane is set as center
+    
         return adminDashboard;
     }
 
@@ -111,12 +119,12 @@ public class AdminController {
         header.setAlignment(Pos.CENTER_LEFT);
 
         // Logo/Title
-        ImageView logo = new ImageView(new Image("/images/logo.png"));
+        ImageView logo = new ImageView(new Image("/sahara-icon.png"));
         logo.setFitHeight(40);
         logo.setPreserveRatio(true);
 
-        Label title = new Label("SAHARA ADMIN DASHBOARD");
-        title.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold; -fx-font-size: 18px;");
+        Label title = new Label("Sahara Admin Dashboard");
+        title.setStyle("-fx-text-fill: #2e36dc; -fx-font-weight: bold; -fx-font-size: 18px;");
 
         // Spacer
         Region spacer = new Region();
@@ -129,7 +137,7 @@ public class AdminController {
         // Logout Button
         Button logoutBtn = new Button("Logout");
         logoutBtn.getStyleClass().add("admin-logout-btn");
-        logoutBtn.setOnAction(e -> handleLogout());
+        logoutBtn.setOnAction(_ -> handleLogout());
 
         header.getChildren().addAll(logo, title, spacer, welcomeLabel, logoutBtn);
         return header;
@@ -154,8 +162,37 @@ public class AdminController {
 
         Button refreshBtn = new Button("Refresh");
         refreshBtn.getStyleClass().add("admin-secondary-btn");
-        refreshBtn.setGraphic(new ImageView(new Image("/icons/refresh.png", 20, 20, true, true)));
+        // refreshBtn.setGraphic(new ImageView(new Image("/icons/refresh.png", 20, 20,
+        // true, true)));
         refreshBtn.setOnAction(_ -> refreshUsersTable(usersTable));
+
+        // Delete Button
+        // Button deleteBtn = new Button("Delete User");
+        // deleteBtn.getStyleClass().add("admin-danger-btn");
+        // deleteBtn.setOnAction(e -> {
+        // User selectedUser = usersTable.getSelectionModel().getSelectedItem();
+        // if (selectedUser != null) {
+        // // Show confirmation dialog
+        // Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
+        // confirmDialog.setTitle("Delete User");
+        // confirmDialog.setHeaderText("Are you sure you want to delete this user?");
+        // confirmDialog.setContentText("User: " + selectedUser.getUsername());
+
+        // Optional<ButtonType> result = confirmDialog.showAndWait();
+        // if (result.isPresent() && result.get() == ButtonType.OK) {
+        // // Delete user from database
+        // boolean success = UserDAO.deleteUserById(selectedUser.getId());
+        // if (success) {
+        // showAlert("Success", "User deleted successfully.");
+        // refreshUsersTable(usersTable); // Refresh the table
+        // } else {
+        // showAlert("Error", "Failed to delete user. Please try again.");
+        // }
+        // }
+        // } else {
+        // showAlert("No Selection", "Please select a user to delete.");
+        // }
+        // });
 
         actionButtons.getChildren().addAll(refreshBtn);
         usersManagementTab.getChildren().addAll(title, usersTable, actionButtons);
@@ -183,26 +220,10 @@ public class AdminController {
         TableColumn<User, String> roleCol = new TableColumn<>("Phone Number");
         roleCol.setCellValueFactory(cellData -> cellData.getValue().roleProperty());
 
-        TableColumn<User, Boolean> activeCol = new TableColumn<>("Status");
-        activeCol.setCellValueFactory(new PropertyValueFactory<>("active"));
-        activeCol.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(Boolean active, boolean empty) {
-                super.updateItem(active, empty);
-                if (empty || active == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(active ? "Active" : "Inactive");
-                    setTextFill(active ? Color.web("#27ae60") : Color.web("#e74c3c"));
-                }
-            }
-        });
-
         TableColumn<User, String> phoneCol = new TableColumn<>("Role");
         phoneCol.setCellValueFactory(cellData -> cellData.getValue().phoneProperty());
 
-        table.getColumns().addAll(idCol, usernameCol, emailCol, roleCol, activeCol, phoneCol);
+        table.getColumns().addAll(idCol, usernameCol, emailCol, roleCol, phoneCol);
         return table;
     }
 
@@ -225,7 +246,8 @@ public class AdminController {
 
         Button refreshBtn = new Button("Refresh");
         refreshBtn.getStyleClass().add("admin-secondary-btn");
-        refreshBtn.setGraphic(new ImageView(new Image("/icons/refresh.png", 20, 20, true, true)));
+        // refreshBtn.setGraphic(new ImageView(new Image("/icons/refresh.png", 20, 20,
+        // true, true)));
         refreshBtn.setOnAction(e -> refreshVehiclesTable(vehicleTable));
 
         actionButtons.getChildren().addAll(refreshBtn);
@@ -318,6 +340,10 @@ public class AdminController {
         Label title = new Label("All Rentals");
         title.getStyleClass().add("admin-section-title");
 
+        // Rentals Table
+        TableView<Rentals> rentalsTable = createRentalsTable();
+        refreshRentalsTable(rentalsTable, "All", LocalDate.now().minusDays(30), LocalDate.now());
+
         // Filter Controls
         HBox filterControls = new HBox(15);
         filterControls.setAlignment(Pos.CENTER);
@@ -331,27 +357,28 @@ public class AdminController {
 
         Button filterBtn = new Button("Apply Filters");
         filterBtn.getStyleClass().add("admin-action-btn");
-        filterBtn.setOnAction(
-                _ -> refreshRentalsTable(null, statusFilter.getValue(), fromDate.getValue(), toDate.getValue()));
-
+        filterBtn.setOnAction(_ -> refreshRentalsTable(rentalsTable, statusFilter.getValue(), fromDate.getValue(),
+                toDate.getValue()));
         filterControls.getChildren().addAll(
                 new Label("Status:"), statusFilter,
                 new Label("From:"), fromDate,
                 new Label("To:"), toDate,
                 filterBtn);
 
-        // Rentals Table
-        TableView<Rentals> rentalsTable = createRentalsTable();
-        refreshRentalsTable(rentalsTable, "All", LocalDate.now().minusDays(30), LocalDate.now());
+        // // Rentals Table
+        // TableView<Rentals> rentalsTable = createRentalsTable();
+        // refreshRentalsTable(rentalsTable, "All", LocalDate.now().minusDays(30),
+        // LocalDate.now());
 
         // Action Buttons
         HBox actionButtons = new HBox(15);
         actionButtons.setAlignment(Pos.CENTER);
 
-        Button refreshBtn = new Button("Refresh");
-        refreshBtn.getStyleClass().add("admin-secondary-btn");
-        refreshBtn.setOnAction(_ -> refreshRentalsTable(rentalsTable, statusFilter.getValue(), fromDate.getValue(),
-                toDate.getValue()));
+        // Button refreshBtn = new Button("Refresh");
+        // refreshBtn.getStyleClass().add("admin-secondary-btn");
+        // refreshBtn.setOnAction(_ -> refreshRentalsTable(rentalsTable,
+        // statusFilter.getValue(), fromDate.getValue(),
+        // toDate.getValue()));
 
         Button approveBtn = new Button("Approve Rental");
         approveBtn.getStyleClass().add("admin-action-btn");
@@ -359,15 +386,19 @@ public class AdminController {
             Rentals selected = rentalsTable.getSelectionModel().getSelectedItem();
             if (selected != null && selected.getStatus().equals("Pending")) {
                 selected.setStatus("Approved");
-                boolean updated = RentalsDAO.updateRentals(selected);
+                boolean updated = RentalsDAO.updateRentalsStatus(selected);
                 if (updated) {
-                    showAlert("Success", "Rental approved successfully.");
+                    AlertUtils.showAlert(Alert.AlertType.INFORMATION, "Success", "Rental approved successfully.");
+                    // showAlert("Success", "Rental approved successfully.");
                     refreshRentalsTable(rentalsTable, statusFilter.getValue(), fromDate.getValue(), toDate.getValue());
                 } else {
-                    showAlert("Error", "Failed to approve rental.");
+                    AlertUtils.showAlert(Alert.AlertType.ERROR, "Error", "Failed to approve rental.");
+
+                    // showAlert("Error", "Failed to approve rental.");
                 }
             } else {
-                showAlert("Invalid Selection", "Please select a pending rental to approve.");
+                AlertUtils.showAlert(Alert.AlertType.WARNING, "Invalid Selection",
+                        "Please select a pending rental to approve.");
             }
         });
 
@@ -382,22 +413,27 @@ public class AdminController {
                     // Update vehicle status to Available
                     Vehicle vehicle = selected.getVehicle();
                     vehicle.setStatus("Rented");
-                    boolean vehicleUpdated = VehicleDAO.updateVehicle(vehicle);
+                    boolean vehicleUpdated = VehicleDAO.updateVehicleStatus(vehicle);
                     if (vehicleUpdated) {
                         // showAlert("Success", "Rented successfully.");
                         refreshRentalsTable(rentalsTable, statusFilter.getValue(), fromDate.getValue(),
                                 toDate.getValue());
                     } else {
-                        showAlert("Error", "Failed to update vehicle status.");
+                        // showAlert("Error", "Failed to update vehicle status.");
+                        AlertUtils.showAlert(Alert.AlertType.ERROR, "Error", "Failed to update vehicle status.");
                     }
 
-                    showAlert("Success", "Rental activated successfully.");
+                    AlertUtils.showAlert(Alert.AlertType.INFORMATION, "Success", "Rental activated successfully.");
                     refreshRentalsTable(rentalsTable, statusFilter.getValue(), fromDate.getValue(), toDate.getValue());
                 } else {
-                    showAlert("Error", "Failed to activate rental.");
+                    // showAlert("Error", "Failed to activate rental.");
+                    AlertUtils.showAlert(Alert.AlertType.ERROR, "Error", "Failed to activate rental.");
                 }
             } else {
-                showAlert("Invalid Selection", "Please select an approved rental to activate.");
+                // showAlert("Invalid Selection", "Please select an approved rental to
+                // activate.");
+                AlertUtils.showAlert(Alert.AlertType.WARNING, "Invalid Selection",
+                        "Please select an approved rental to activate.");
             }
         });
 
@@ -408,7 +444,10 @@ public class AdminController {
             if (selected != null && selected.getStatus().equals("Active")) {
                 showCompleteRentalDialog(selected, rentalsTable);
             } else {
-                showAlert("Invalid Selection", "Please select an active rental to complete.");
+                // showAlert("Invalid Selection", "Please select an active rental to
+                // complete.");
+                AlertUtils.showAlert(Alert.AlertType.WARNING, "Invalid Selection",
+                        "Please select an active rental to complete.");
             }
         });
 
@@ -424,23 +463,33 @@ public class AdminController {
                     // Update vehicle status to Available
                     Vehicle vehicle = selected.getVehicle();
                     vehicle.setStatus("Available");
-                    boolean vehicleUpdated = VehicleDAO.updateVehicle(vehicle);
+                    boolean vehicleUpdated = VehicleDAO.updateVehicleStatus(vehicle);
                     if (vehicleUpdated) {
-                        showAlert("Success", "Rental canceled successfully.");
+
+                        // showAlert("Success", "Rental canceled successfully.");
+                        AlertUtils.showAlert(Alert.AlertType.INFORMATION, "Success",
+                                "Rental canceled successfully.");
                         refreshRentalsTable(rentalsTable, statusFilter.getValue(), fromDate.getValue(),
                                 toDate.getValue());
                     } else {
-                        showAlert("Error", "Failed to update vehicle status.");
+                        // showAlert("Error", "Failed to update vehicle status.");
+                        AlertUtils.showAlert(Alert.AlertType.ERROR, "Error",
+                                "Failed to update vehicle status.");
                     }
                 } else {
-                    showAlert("Error", "Failed to cancel rental.");
+                    // showAlert("Error", "Failed to cancel rental.");
+                    AlertUtils.showAlert(Alert.AlertType.ERROR, "Error",
+                            "Failed to cancel Rental.");
+
                 }
             } else {
-                showAlert("Invalid Selection", "Only pending or approved rentals can be canceled.");
+
+                AlertUtils.showAlert(Alert.AlertType.WARNING, "Invalid Selection",
+                        "Only pending or approved rentals can be canceled.");
             }
         });
 
-        actionButtons.getChildren().addAll(refreshBtn, approveBtn, activateBtn, completeBtn, cancelBtn);
+        actionButtons.getChildren().addAll(approveBtn, activateBtn, completeBtn, cancelBtn);
         rentalsManagementTab.getChildren().addAll(title, filterControls, rentalsTable, actionButtons);
 
         ScrollPane scrollPane = new ScrollPane(rentalsManagementTab);
@@ -463,10 +512,17 @@ public class AdminController {
         TableColumn<Rentals, String> vehicleCol = new TableColumn<>("Vehicle");
         vehicleCol.setCellValueFactory(cell -> cell.getValue().getVehicle().makeProperty().concat(" ")
                 .concat(cell.getValue().getVehicle().modelProperty()));
-
         TableColumn<Rentals, String> datesCol = new TableColumn<>("Rental Period");
-        datesCol.setCellValueFactory(cell -> cell.getValue().startDateProperty().asString().concat(" to ")
-                .concat(cell.getValue().endDateProperty().asString()));
+        datesCol.setCellValueFactory(cell -> {
+            Rentals rental = cell.getValue();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d"); // Format: "April 8"
+
+            // Convert Timestamp to LocalDate and format
+            String startDate = rental.getRentalDate().toLocalDateTime().toLocalDate().format(formatter);
+            String endDate = rental.getReturnDate().toLocalDateTime().toLocalDate().format(formatter);
+
+            return new SimpleStringProperty(startDate + " - " + endDate);
+        });
 
         TableColumn<Rentals, Double> totalCol = new TableColumn<>("Total Cost");
         totalCol.setCellValueFactory(new PropertyValueFactory<>("totalCost"));
@@ -513,9 +569,7 @@ public class AdminController {
 
         // totalPaymentsLabel = new Label("Total Payments: 0");
         // totalPaymentsLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px;");
-       
-       
-        // updateSummaryStats();
+
         VBox paymentsManagementTab = new VBox(20);
         paymentsManagementTab.setPadding(new Insets(20));
         paymentsManagementTab.setAlignment(Pos.TOP_CENTER);
@@ -531,14 +585,14 @@ public class AdminController {
         DatePicker fromDate = new DatePicker(LocalDate.now().minusDays(30));
         DatePicker toDate = new DatePicker(LocalDate.now());
 
-        Button filterBtn = new Button("Apply Filters");
-        filterBtn.getStyleClass().add("admin-action-btn");
-        filterBtn.setOnAction(_ -> refreshPaymentsTable(null, fromDate.getValue(), toDate.getValue()));
+        // Button filterBtn = new Button("Apply Filters");
+        // filterBtn.getStyleClass().add("admin-action-btn");
+        // filterBtn.setOnAction(_ -> refreshPaymentsTable(null, fromDate.getValue(),
+        // toDate.getValue()));
 
         filterControls.getChildren().addAll(
                 new Label("From:"), fromDate,
-                new Label("To:  "), toDate,
-                filterBtn);
+                new Label("To:  "), toDate);
 
         // Payments Table
         TableView<Payment> paymentsTable = createPaymentsTable();
@@ -618,7 +672,18 @@ public class AdminController {
         methodCol.setCellValueFactory(new PropertyValueFactory<>("paymentMethod"));
 
         TableColumn<Payment, String> dateCol = new TableColumn<>("Date");
-        dateCol.setCellValueFactory(new PropertyValueFactory<>("paymentDate"));
+        dateCol.setCellValueFactory(cell -> {
+            Payment payment = cell.getValue();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy"); // e.g., "April 10, 2025"
+
+            // Convert Timestamp to LocalDate and format
+            String formattedDate = payment.getPaymentDate()
+                    .toLocalDateTime()
+                    .toLocalDate()
+                    .format(formatter);
+
+            return new SimpleStringProperty(formattedDate);
+        });
 
         TableColumn<Payment, String> statusCol = new TableColumn<>("Status");
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
@@ -695,7 +760,7 @@ public class AdminController {
     }
 
     private void showCompleteRentalDialog(Rentals Rentals, TableView<Rentals> table) {
-       
+
         Dialog<Payment> dialog = new Dialog<>();
         dialog.setTitle("Complete Rental");
         dialog.setHeaderText("Enter payment details to complete rental");
@@ -755,14 +820,15 @@ public class AdminController {
                     payment.setVehicleName(Rentals.getVehicleName());
                     payment.setAmount(amount);
                     payment.setPaymentMethod(methodCombo.getValue());
-                    payment.setPaymentDate(LocalDate.now().toString());
+                    payment.setPaymentDate(Timestamp.valueOf(LocalDateTime.now()));
                     payment.setStatus("Completed");
                     payment.setProcessedBy(currentUser.getUsername());
 
                     // Add payment to the database
                     boolean paymentAdded = PaymentDAO.addPayment(payment);
                     if (!paymentAdded) {
-                        showAlert("Payment Error", "Failed to add payment to the database.");
+                        AlertUtils.showAlert(Alert.AlertType.ERROR, "Payment Error",
+                                "Failed to add payment to the database.");
                         return null;
                     }
 
@@ -770,23 +836,26 @@ public class AdminController {
                     Rentals.setStatus("Completed");
                     boolean rentalUpdated = RentalsDAO.updateRentals(Rentals);
                     if (!rentalUpdated) {
-                        showAlert("Rental Update Error", "Failed to update rental status.");
+                        AlertUtils.showAlert(Alert.AlertType.ERROR, "Rental Update Error",
+                                "Failed to update rental status.");
                         return null;
                     }
 
                     // Update vehicle status to Available
                     Vehicle vehicle = Rentals.getVehicle();
                     vehicle.setStatus("Available");
-                    boolean vehicleUpdated = VehicleDAO.updateVehicle(vehicle);
+                    boolean vehicleUpdated = VehicleDAO.updateVehicleStatus(vehicle);
                     if (!vehicleUpdated) {
-                        showAlert("Vehicle Update Error", "Failed to update vehicle status.");
+                        AlertUtils.showAlert(Alert.AlertType.ERROR, "Vehicle Update Error",
+                                "Failed to update vehicle status.");
                         return null;
                     }
 
                     return payment;
 
                 } catch (NumberFormatException e) {
-                    showAlert("Input Error", "Please enter a valid payment amount.");
+                    AlertUtils.showAlert(Alert.AlertType.ERROR, "Input Error",
+                            "Please enter a valid payment amount.");
                     return null;
                 }
             }
@@ -795,6 +864,9 @@ public class AdminController {
 
         Optional<Payment> result = dialog.showAndWait();
         result.ifPresent(payment -> {
+            updateSummaryStats();
+
+            
             // Refresh rentals table
             refreshRentalsTable(table, "All", LocalDate.now().minusDays(30), LocalDate.now());
 
@@ -809,6 +881,8 @@ public class AdminController {
                     VBox paymentsContent = (VBox) paymentsScroll.getContent();
                     TableView<Payment> paymentsTable = (TableView<Payment>) paymentsContent.getChildren().get(3);
                     refreshPaymentsTable(paymentsTable, LocalDate.now().minusDays(30), LocalDate.now());
+                    // Update summary stats
+                    updateSummaryStats();
                 } else {
                     System.err.println("Error: Payments tab not found.");
                 }
@@ -818,36 +892,60 @@ public class AdminController {
         });
     }
 
-    private void cancelRental(Rentals Rentals, TableView<Rentals> table) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Confirm Cancellation");
-        alert.setHeaderText("Cancel Rental #" + Rentals.getId());
-        alert.setContentText("Are you sure you want to cancel this rental?");
+    // private void cancelRental(Rentals Rentals, TableView<Rentals> table) {
+    // Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+    // alert.setTitle("Confirm Cancellation");
+    // alert.setHeaderText("Cancel Rental #" + Rentals.getId());
+    // alert.setContentText("Are you sure you want to cancel this rental?");
 
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            Rentals.setStatus("Cancelled");
-            RentalsDAO.updateRentals(Rentals);
-            refreshRentalsTable(table, "All", LocalDate.now().minusDays(30), LocalDate.now());
-        }
-    }
+    // Optional<ButtonType> result = alert.showAndWait();
+    // if (result.isPresent() && result.get() == ButtonType.OK) {
+    // Rentals.setStatus("Cancelled");
+    // RentalsDAO.updateRentals(Rentals);
+    // refreshRentalsTable(table, "All", LocalDate.now().minusDays(30),
+    // LocalDate.now());
+    // }
+    // }
 
     private void exportPaymentsToCSV() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export Payments");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
         File file = fileChooser.showSaveDialog(rootLayout.getScene().getWindow());
-        if (file != null) {
-            // Implementation would export payments to CSV
-        }
-    }
 
-    private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        if (file != null) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                // Write the header row
+                writer.write("ID,Rental ID,User ID,Vehicle,Amount,Payment Method,Payment Date,Status,Processed By");
+                writer.newLine();
+
+                // Fetch all payments
+                List<Payment> payments = PaymentDAO.getAllPayments();
+
+                // Write each payment as a row in the CSV
+                for (Payment payment : payments) {
+                    writer.write(String.format("%d,%d,%d,%s,%.2f,%s,%s,%s,%s",
+                            payment.getId(),
+                            payment.getRentalId(),
+                            payment.getUserId(),
+                            payment.getVehicleName(),
+                            payment.getAmount(),
+                            payment.getPaymentMethod(),
+                            payment.getPaymentDate(),
+                            payment.getStatus(),
+                            payment.getProcessedBy()));
+                    writer.newLine();
+                }
+                // Show success message
+                AlertUtils.showAlert(Alert.AlertType.INFORMATION, "Export Successful",
+                        "Payments exported successfully to " + file.getAbsolutePath());
+
+            } catch (IOException e) {
+                // Show error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Export Failed",
+                        "Failed to export payments: " + e.getMessage());
+            }
+        }
     }
 
     private void updateSummaryStats() {

@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -13,10 +14,11 @@ import com.sahara.config.DatabaseConfig;
 import com.sahara.model.Rentals; // Use Rentals instead of Rental
 import com.sahara.model.User;
 import com.sahara.model.Vehicle;
-import com.sahara.notification.Notifier;
 import com.sahara.repository.RentalsDAO;
+import com.sahara.repository.VehicleDAO;
 import com.sahara.service.RentalService;
 import com.sahara.service.UserService;
+import com.sahara.view.util.AlertUtils;
 import com.sahara.view.util.AppNavigator;
 
 import javafx.geometry.Insets;
@@ -45,12 +47,12 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 
 public class UserController {
     private final User currentUser;
     private final RentalService rentalService;
+    private ScrollPane rentalsScrollPane; // Class variable to reference the ScrollPane
+    private VBox rentalsContainer; // Class variable to reference the content VBox
     // private VBox rentalsContainer;
 
     public UserController(User user) {
@@ -98,12 +100,15 @@ public class UserController {
         topBar.getStyleClass().add("dashboard-header");
         topBar.setPadding(new Insets(15, 25, 15, 25));
         topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setStyle("-fx-background-color: #ffffff;");
+        // topBar.setStyle("-fx-background-color: #ffffff;");
 
         // Logo/Title
-        Label title = new Label("SAHARA VEHICLE RENTALS");
-        title.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        title.setStyle("-fx-text-fill: #27ae60;");
+        ImageView logo = new ImageView(new Image("sahara-icon.png"));
+        logo.setFitHeight(40);
+        logo.setPreserveRatio(true);
+
+        Label title = new Label("Sahara Users Dashboard");
+        title.setStyle("-fx-text-fill: #00c030; -fx-font-weight: bold; -fx-font-size: 18px;");
 
         // Spacer
         Region spacer = new Region();
@@ -185,11 +190,11 @@ public class UserController {
         Label modelLabel = new Label(vehicle.model());
         modelLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px;");
 
-        Label detailsLabel = new Label(String.format("%s • %s • %d seats",
-                vehicle.type(), vehicle.transmission(), vehicle.seats()));
+        Label detailsLabel = new Label(String.format("%s • %s ",
+                vehicle.type(), vehicle.transmission()));
 
         Label priceLabel = new Label(String.format("$%.2f/day", vehicle.dailyRate()));
-        priceLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #27ae60;");
+        priceLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #00c030;");
 
         // Rental controls
         DatePicker startDate = new DatePicker(LocalDate.now());
@@ -201,33 +206,39 @@ public class UserController {
         rentBtn.setOnAction(_ -> {
             // Validate rental dates
             if (startDate.getValue() == null || endDate.getValue() == null) {
-                Notifier.showError("Invalid Dates ❌ " + " Please select valid rental dates.");
+                // AlertUtils error
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Invalid Dates", "Please select valid rental dates.");
                 return;
             }
 
             // Validation of date : cant rent a vehicle with date less than today
             if (startDate.getValue().isBefore(LocalDate.now())) {
-                Notifier.showError("Invalid Dates ❌" + "Start date must be today or later.");
+                // AlertUtils error
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Invalid Dates", "Start date must be today or later.");
                 return;
             }
             if (endDate.getValue().isBefore(LocalDate.now())) {
-                Notifier.showError("Invalid Dates ❌" + "End date must be today or later.");
+                // AlertUtils error#
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Invalid Dates", "End date must be today or later.");
                 return;
             }
 
             if (endDate.getValue().isBefore(startDate.getValue())) {
-                Notifier.showError("Invalid Dates ❌" + "End date must be after start date.");
+                // AlertUtils error
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Invalid Dates", "End date must be after start date.");
                 return;
             }
 
             // Calculate rental duration and cost
             long rentalDays = endDate.getValue().toEpochDay() - startDate.getValue().toEpochDay();
             if (rentalDays <= 0) {
-                Notifier.showError("Invalid Dates ❌" + "Rental period must be at least 1 day.");
+                // AlertUtils error
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Invalid Dates", "Rental period must be at least 1 day.");
                 return;
             }
             if (rentalDays > 30) {
-                Notifier.showError("Invalid Dates ❌" + "Rental period cannot exceed 30 days.");
+                // AlertUtils error
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Invalid Dates", "Rental period cannot exceed 30 days.");
                 return;
             }
 
@@ -271,9 +282,9 @@ public class UserController {
 
                         int rowsInserted = stmt.executeUpdate();
                         if (rowsInserted > 0) {
-                            Notifier.showSuccess(
-                                    "Rental Successful" + " ✅ " +
-                                            "The vehicle has been successfully rented!");
+                            // Rental was successful
+                            AlertUtils.showAlert(Alert.AlertType.INFORMATION, "Rental Successful",
+                                    "The vehicle has been successfully rented!");
 
                             // Optionally, update the vehicle status to "Rented"
                             String updateVehicleQuery = "UPDATE vehicles SET status = 'inProcess' WHERE id = ?";
@@ -285,16 +296,16 @@ public class UserController {
                             // Refresh the view
                             AppNavigator.loadView(new UserController(currentUser).getView(new BorderPane()));
                         } else {
-                            Notifier.showError(
-                                    "Rental Failed" + " ❌ " +
-                                            "An error occurred while processing your rental. Please try again.");
+                            // Rental failed
+                            AlertUtils.showAlert(Alert.AlertType.ERROR, "Rental Failed",
+                                    "An error occurred while processing your rental. Please try again.");
                         }
                     }
                 } catch (SQLException e) {
-                    Notifier.showError(
-                            "Database Error" + " ❌ " +
-                                    "An error occurred while accessing the database: " + e.getMessage());
-                    // e.printStackTrace();
+                    // Show error message to the user
+                    AlertUtils.showAlert(Alert.AlertType.ERROR, "Database Error",
+                            "An error occurred while accessing the database: " + e.getMessage());
+
                 }
             }
 
@@ -314,10 +325,22 @@ public class UserController {
     }
 
     private ScrollPane createRentalsView(User currentUser) {
-        VBox rentalsContainer = new VBox(20);
-        rentalsContainer.setPadding(new Insets(20));
-        rentalsContainer.setAlignment(Pos.TOP_CENTER);
+        // Initialize containers if they don't exist
+        if (rentalsContainer == null) {
+            rentalsContainer = new VBox(20);
+            rentalsContainer.setPadding(new Insets(20));
+            rentalsContainer.setAlignment(Pos.TOP_CENTER);
+        } else {
+            rentalsContainer.getChildren().clear(); // Clear existing content
+        }
 
+        // Create/reuse ScrollPane
+        if (rentalsScrollPane == null) {
+            rentalsScrollPane = new ScrollPane(rentalsContainer);
+            rentalsScrollPane.setFitToWidth(true);
+        }
+
+        // Populate content
         Label sectionTitle = new Label("My Rentals");
         sectionTitle.getStyleClass().add("section-title");
 
@@ -336,9 +359,7 @@ public class UserController {
             rentalsContainer.getChildren().addAll(sectionTitle, rentalsList);
         }
 
-        ScrollPane scrollPane = new ScrollPane(rentalsContainer);
-        scrollPane.setFitToWidth(true);
-        return scrollPane;
+        return rentalsScrollPane;
     }
 
     private HBox createRentalItem(Rentals rental) {
@@ -362,9 +383,18 @@ public class UserController {
         Label modelLabel = new Label(rental.getVehicleName());
         modelLabel.setStyle("-fx-font-weight: bold;");
 
-        Label datesLabel = new Label(String.format("%s to %s",
-                rental.getRentalDate().toString(),
-                rental.getReturnDate() != null ? rental.getReturnDate().toString() : "N/A"));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d");
+
+        String startDate = rental.getRentalDate()
+                .toLocalDateTime()
+                .toLocalDate()
+                .format(formatter);
+
+        String endDate = rental.getReturnDate() != null
+                ? rental.getReturnDate().toLocalDateTime().toLocalDate().format(formatter)
+                : "N/A";
+
+        Label datesLabel = new Label(String.format("%s - %s", startDate, endDate));
 
         // Add total cost information
         Label costLabel = new Label(String.format("Total Cost: $%.2f", rental.getTotalCost()));
@@ -380,13 +410,13 @@ public class UserController {
                 statusLabel.setTextFill(Color.web("#3498db")); // Blue
                 break;
             case "Approved":
-                statusLabel.setTextFill(Color.web("#27ae60")); // Green
+                statusLabel.setTextFill(Color.web("#dcf70c")); // yellow
                 break;
             case "Ongoing":
-                statusLabel.setTextFill(Color.web("#27ae60")); // Green
+                statusLabel.setTextFill(Color.web("#dcf70c")); // yellow
                 break;
             case "Completed":
-                statusLabel.setTextFill(Color.web("#f39c12")); // Orange
+                statusLabel.setTextFill(Color.web("#06d61b")); // green
                 break;
             case "Cancelled":
                 statusLabel.setTextFill(Color.web("#e74c3c")); // Red
@@ -410,21 +440,60 @@ public class UserController {
 
             // Add cancel functionality
             cancelBtn.setOnAction(e -> {
-                boolean success = RentalsDAO.updateRentalsStatus(rental);
-                if (success) {
-                    // Show confirmation and refresh the view
-                    showAlert(Alert.AlertType.INFORMATION, "Rental Cancelled",
-                            "Your rental has been successfully cancelled.");
+                // Convert rental dates to LocalDate
+                LocalDate rentalStartDate = rental.getRentalDate().toLocalDateTime().toLocalDate();
+                LocalDate rentalEndDate = rental.getReturnDate().toLocalDateTime().toLocalDate();
 
-                    // Refresh the view
-                    // AppNavigator.loadView(new UserController(currentUser).getView(new
-                    // BorderPane()));
+                // Calculate rental duration in days
+                long rentalDays = ChronoUnit.DAYS.between(rentalStartDate, rentalEndDate);
 
-                    refreshRentalsView();
-                } else {
-                    showAlert(Alert.AlertType.ERROR, "Error",
-                            "Could not cancel the rental. Please try again later.");
+                // Show confirmation dialog
+                Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
+                confirmDialog.setTitle("Cancel Rental");
+                confirmDialog.setHeaderText("Cancel Rental for " + rental.getVehicleName());
+
+                confirmDialog.setContentText(String.format(
+                        "Please confirm the following rental details:\n\n" +
+                                "Vehicle: %s\n" +
+                                "Rental Period: %s to %s\n" +
+                                "Duration: %d days\n" +
+                // "Daily Rate: $%.2f\n" +
+                                "Total Cost: $%.2f",
+                        rental.getVehicleName(),
+                        rentalStartDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy")),
+                        rentalEndDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy")),
+                        rentalDays,
+                        rental.getTotalCost()));
+
+                // confirmDialog.showAndWait();
+
+                // Wait for user confirmation
+                Optional<ButtonType> result = confirmDialog.showAndWait();
+                if (result.isPresent() && result.get() == ButtonType.OK) {
+
+                    // Update vehicle status to Available
+                    rental.setStatus("Cancelled");
+
+                    Vehicle vehicle = rental.getVehicle(); // Assuming `getVehicle()` returns the associated vehicle
+                    vehicle.setStatus("Available"); // boolean updated = RentalsDAO.updateRentals(rental);
+
+                    // Update the database
+                    boolean rentalUpdated = RentalsDAO.updateRentalsStatus(rental);
+                    boolean vehicleUpdated = VehicleDAO.updateVehicleStatus(vehicle);
+
+                    if (rentalUpdated && vehicleUpdated) {
+                        // Show confirmation and refresh the view
+                        AlertUtils.showAlert(Alert.AlertType.INFORMATION, "Rental Cancelled",
+                                "Your rental has been successfully cancelled.");
+
+                        // refresh
+                        refreshRentalsView();
+                    } else {
+                        AlertUtils.showAlert(Alert.AlertType.ERROR, "Error",
+                                "Could not cancel the rental. Please try again later.");
+                    }
                 }
+
             });
 
             actionBox.getChildren().add(cancelBtn);
@@ -436,7 +505,7 @@ public class UserController {
                 extendBtn.setStyle("-fx-background-color: #f39c12;");
 
                 // Add extend functionality
-                extendBtn.setOnAction(e -> {
+                extendBtn.setOnAction(_ -> {
                     showExtendRentalDialog(rental);
                 });
 
@@ -464,20 +533,19 @@ public class UserController {
         return rentalItem;
     }
 
-    // Helper method to show alerts
-    private void showAlert(Alert.AlertType alertType, String title, String content) {
-        Alert alert = new Alert(alertType);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
-    }
+    // // Helper method to show alerts
+    // private void showAlert(Alert.AlertType alertType, String title, String
+    // content) {
+    // Alert alert = new Alert(alertType);
+    // alert.setTitle(title);
+    // alert.setHeaderText(null);
+    // alert.setContentText(content);
+    // alert.showAndWait();
+    // }
 
     // Helper method to refresh the rentals view
     private void refreshRentalsView() {
-        // Clear the existing rentals and reload the rentals view
-        // rentalsContainer.getChildren().clear();
-        createRentalsView(currentUser);
+        createRentalsView(currentUser); // This will update the existing rentalsContainer
     }
 
     // Dialog to extend a rental
@@ -527,11 +595,11 @@ public class UserController {
         result.ifPresent(newDate -> {
             boolean success = rentalService.extendRental(rental.getId(), newDate);
             if (success) {
-                showAlert(Alert.AlertType.INFORMATION, "Rental Extended",
+                AlertUtils.showAlert(Alert.AlertType.INFORMATION, "Rental Extended",
                         "Your rental has been successfully extended to " + newDate);
                 refreshRentalsView();
             } else {
-                showAlert(Alert.AlertType.ERROR, "Error",
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Error",
                         "Could not extend the rental. Please try again later.");
             }
         });
@@ -694,14 +762,16 @@ public class UserController {
             if (success) {
                 // UserDAO.updateUserProfile(currentUser.getId(), newUsername, newEmail,
                 // newPhone, newAddress);
-
-                Notifier.showSuccess("Profile updated successfully!");
+                // AlertUtils
+                AlertUtils.showAlert(Alert.AlertType.INFORMATION, " Success: ",
+                        "Profile updated successfully!");
                 currentUser.setUsername(newUsername);
                 currentUser.setEmail(newEmail);
                 currentUser.setPhone(newPhone);
                 currentUser.setAddress(newAddress);
             } else {
-                // Notifier.showError("Failed to update profile. Please try again.");
+                // AlertUtils error
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Error", "Failed to update profile. Please try again.");
             }
         });
 

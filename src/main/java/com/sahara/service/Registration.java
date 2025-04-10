@@ -5,7 +5,9 @@ package com.sahara.service;
 import java.util.regex.Pattern;
 
 import com.sahara.config.UserRegistration;
-import com.sahara.notification.Notifier;
+import com.sahara.view.util.AlertUtils;
+import javafx.scene.control.Alert;
+
 
 public class Registration {
 
@@ -19,62 +21,69 @@ public class Registration {
         try {
             // Username validation
             if (username.isEmpty()) {
-                // System.out.println("Username is required.");
-                Notifier.showError("❌ Registration Failed ! Username is required.");
+                // Error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Registration Failed", "Username is required.");
 
                 return false;
             }
             if (username.length() < 4 || username.length() > 20) {
-                // System.out.println("Username must be between 4 and 20 characters.");
-                Notifier.showError("❌ Registration Failed ! Username must be between 4 and 20 characters.");
+                //Error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Registration Failed", "Username must be between 4 and 20 characters.");
 
                 return false;
             }
 
             // Password validation
             if (password.isEmpty()) {
-                // System.out.println("Password is required.");
-                Notifier.showError("❌ Registration Failed ! Password is required.");
-
+                // Error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Registration Failed", "Password is required.");
                 return false;
             }
             if (password.length() < 8) {
-                Notifier.showError("❌ Registration Failed ! Password must be at least 8 characters long.");
+                //Error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Registration Failed", "Password must be at least 8 characters long.");
                 return false;
             }
             if (!password.matches(".*[A-Z].*") || !password.matches(".*[a-z].*") ||!password.matches(".*\\d.*") || !password.matches(".*[@#$%^&+=!].*")) {
-                Notifier.showError("❌ Registration Failed ! Password must include uppercase, lowercase, number, and special character.");
+               //Error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Registration Failed", "Password must include uppercase, lowercase, number, and special character.");
                 return false;
             }
 
             // Email validation
             if (email.isEmpty()) {
-                Notifier.showError("❌ Registration Failed ! Email is required.");
+                //Error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Registration Failed", "Email is required.");
                 return false;
             }
             if (!EMAIL_PATTERN.matcher(email).matches()) {
-                Notifier.showError("❌ Registration Failed ! Invalid email format.");
+                //Error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Registration Failed", "Invalid email format.");
                 return false;
             }
 
             // Phone validation
             if (phone.isEmpty()) {
-                Notifier.showError("❌ Registration Failed ! Phone number is required.");
+                //Error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Registration Failed", "Phone number is required.");
                 return false;
             }
             if (!PHONE_PATTERN.matcher(phone).matches()) {
-                Notifier.showError("❌ Registration Failed ! Phone number must be 10 digits.");
+                //Error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Registration Failed", "Invalid phone number format. Must be 10 digits.");
 
                 return false;
             }
 
             // Address validation
             if (address.isEmpty()) {
-                Notifier.showError("❌ Registration Failed ! Address is required.");
+                //Error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Registration Failed", "Address is required.");
                 return false;
             }
             if (address.length() < 5) {
-                Notifier.showError("❌ Registration Failed ! Address must be at least 5 characters long.");
+                //Error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Registration Failed", "Address must be at least 5 characters long.");
                 return false;
             }
 
@@ -85,7 +94,8 @@ public class Registration {
             UserRegistration.registerUser(username, hashedPassword, phone, email, address, role);
 
             // 3️⃣ Notify user of success after registration
-            Notifier.showSuccess("Registration successful! Welcome, " + username + ".");
+            // 4️⃣ Show success message using AlertUtils
+            AlertUtils.showAlert(Alert.AlertType.INFORMATION, "Registration Successful", "User registered successfully! "+username+".");
             System.out.println("User registered successfully!");
             return true;
 
@@ -96,5 +106,3 @@ public class Registration {
     }
 }
 
-
-// private String role = "customer";

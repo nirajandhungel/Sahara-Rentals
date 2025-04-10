@@ -1,7 +1,10 @@
 package com.sahara.view.controller;
 
+import java.io.BufferedWriter;
 import java.io.File;
-import java.time.LocalDate;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 import com.sahara.model.Bike;
@@ -9,8 +12,10 @@ import com.sahara.model.Car;
 import com.sahara.model.ElectricVehicle;
 import com.sahara.model.User;
 import com.sahara.model.Vehicle;
+import com.sahara.model.VehicleRentalActivity;
 import com.sahara.repository.RentalsDAO;
 import com.sahara.repository.VehicleDAO;
+import com.sahara.view.util.AlertUtils;
 import com.sahara.view.util.AppNavigator;
 
 import javafx.collections.FXCollections;
@@ -22,7 +27,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -31,7 +35,6 @@ import javafx.scene.control.TabPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
@@ -48,7 +51,7 @@ import javafx.stage.FileChooser;
 public class VMTController {
     private final User currentUser;
     private final VehicleDAO vehicleDAO = new VehicleDAO();
-    private final RentalsDAO RentalsDAO = new RentalsDAO();
+    // private final RentalsDAO RentalsDAO = new RentalsDAO();
     private final BorderPane rootLayout;
 
     public VMTController(User user) {
@@ -73,7 +76,6 @@ public class VMTController {
         vehiclesTab.setContent(createVehicleManagementTab());
         vehiclesTab.setClosable(false);
 
-
         // Reports Tab
         Tab reportsTab = new Tab("Reports");
         reportsTab.setContent(createReportsTab());
@@ -92,12 +94,12 @@ public class VMTController {
         header.setAlignment(Pos.CENTER_LEFT);
 
         // Logo/Title
-        ImageView logo = new ImageView(new Image("/images/logo.png"));
+        ImageView logo = new ImageView(new Image("sahara-icon.png"));
         logo.setFitHeight(40);
         logo.setPreserveRatio(true);
 
-        Label title = new Label("SAHARA VEHICLE MANAGEMENT");
-        title.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold; -fx-font-size: 18px;");
+        Label title = new Label("Vehicle Management Team");
+        title.setStyle("-fx-text-fill: #ca1f16; -fx-font-weight: bold; -fx-font-size: 18px;");
 
         // Spacer
         Region spacer = new Region();
@@ -128,7 +130,7 @@ public class VMTController {
         // Add New Vehicle Button
         Button addVehicleBtn = new Button("Add New Vehicle");
         addVehicleBtn.getStyleClass().add("vmt-action-btn");
-        addVehicleBtn.setGraphic(new ImageView(new Image("/icons/add.png", 20, 20, true, true)));
+        // addVehicleBtn.setGraphic(new ImageView(new Image("/icons/add.png", 20, 20, true, true)));
         addVehicleBtn.setOnAction(_ -> showAddVehicleDialog());
 
         // Vehicle Table
@@ -141,30 +143,32 @@ public class VMTController {
 
         Button refreshBtn = new Button("Refresh");
         refreshBtn.getStyleClass().add("vmt-secondary-btn");
-        refreshBtn.setGraphic(new ImageView(new Image("/icons/refresh.png", 20, 20, true, true)));
+        // refreshBtn.setGraphic(new ImageView(new Image("/icons/refresh.png", 20, 20, true, true)));
         refreshBtn.setOnAction(_ -> refreshVehicleTable(vehicleTable));
 
         Button editBtn = new Button("Edit Selected");
         editBtn.getStyleClass().add("vmt-action-btn");
-        editBtn.setGraphic(new ImageView(new Image("/icons/edit.png", 20, 20, true, true)));
+        // editBtn.setGraphic(new ImageView(new Image("/icons/edit.png", 20, 20, true, true)));
         editBtn.setOnAction(_ -> {
             Vehicle selected = vehicleTable.getSelectionModel().getSelectedItem();
             if (selected != null) {
-                showEditVehicleDialog(selected);
+                showEditVehicleDialog(selected, vehicleTable);
             } else {
-                showAlert("No Selection", "Please select a vehicle to edit.");
+                // Show error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Edit Failed","Please select a vehicle to edit.");
             }
         });
 
         Button removeBtn = new Button("Remove Selected");
-        removeBtn.getStyleClass().add("vmt-danger-btn");
-        removeBtn.setGraphic(new ImageView(new Image("/icons/delete.png", 20, 20, true, true)));
+        removeBtn.getStyleClass().add("vmt-action-btn");
+        // removeBtn.setGraphic(new ImageView(new Image("/icons/delete.png", 20, 20, true, true)));
         removeBtn.setOnAction(_ -> {
             Vehicle selected = vehicleTable.getSelectionModel().getSelectedItem();
             if (selected != null) {
                 confirmAndRemoveVehicle(selected, vehicleTable);
             } else {
-                showAlert("No Selection", "Please select a vehicle to remove.");
+                // Show error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR, "Removal Failed", "Please select a vehicle to remove.");
             }
         });
 
@@ -250,61 +254,121 @@ public class VMTController {
         return table;
     }
 
-
     private VBox createReportsTab() {
         VBox reportsTab = new VBox(20);
         reportsTab.setPadding(new Insets(20));
         reportsTab.setAlignment(Pos.TOP_CENTER);
 
         // Section Title
-        Label title = new Label("Reports & Analytics");
+        Label title = new Label("Vehicle Rental Activity");
         title.getStyleClass().add("vmt-section-title");
 
-        // Report Options
-        VBox reportOptions = new VBox(15);
-        reportOptions.setAlignment(Pos.TOP_CENTER);
-        reportOptions.setPadding(new Insets(20));
-        reportOptions.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 10;");
+        // TableView for Vehicle Rental Data
+        TableView<VehicleRentalActivity> rentalActivityTable = new TableView<>();
+        rentalActivityTable.getStyleClass().add("vmt-table");
+        rentalActivityTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        ComboBox<String> reportType = new ComboBox<>();
-        reportType.getItems().addAll(
-            "Vehicle Utilization Report",
-            "Revenue Report",
-            "Rentals Trends",
-            "Vehicle Status Summary"
-        );
-        reportType.setPromptText("Select Report Type");
+        // Columns
+        TableColumn<VehicleRentalActivity, Integer> idCol = new TableColumn<>("Vehicle ID");
+        idCol.setCellValueFactory(new PropertyValueFactory<>("vehicleId"));
 
-        DatePicker fromDate = new DatePicker(LocalDate.now().minusMonths(1));
-        DatePicker toDate = new DatePicker(LocalDate.now());
+        TableColumn<VehicleRentalActivity, String> nameCol = new TableColumn<>("Vehicle Name");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("vehicleName"));
 
-        Button generateBtn = new Button("Generate Report");
-        generateBtn.getStyleClass().add("vmt-action-btn");
-        generateBtn.setOnAction(e -> generateReport(reportType.getValue(), fromDate.getValue(), toDate.getValue()));
+        TableColumn<VehicleRentalActivity, String> numberCol = new TableColumn<>("Vehicle Number");
+        numberCol.setCellValueFactory(new PropertyValueFactory<>("vehicleNumber"));
 
-        reportOptions.getChildren().addAll(
-            new Label("Select Report Type:"), reportType,
-            new Label("Date Range:"), new HBox(10, fromDate, toDate),
-            generateBtn
-        );
+        TableColumn<VehicleRentalActivity, Integer> rentalCountCol = new TableColumn<>("Rental Count");
+        rentalCountCol.setCellValueFactory(new PropertyValueFactory<>("rentalCount"));
 
-        // Report Preview Area
-        Label previewTitle = new Label("Report Preview");
-        previewTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 16px;");
+        TableColumn<VehicleRentalActivity, Double> totalAmountCol = new TableColumn<>("Total Amount");
+        totalAmountCol.setCellValueFactory(new PropertyValueFactory<>("totalAmount"));
 
-        TextArea reportPreview = new TextArea();
-        reportPreview.setEditable(false);
-        reportPreview.setWrapText(true);
-        reportPreview.setPrefHeight(300);
-        reportPreview.setStyle("-fx-font-family: monospace;");
+        TableColumn<VehicleRentalActivity, String> userCol = new TableColumn<>("Last Rented By");
+        userCol.setCellValueFactory(new PropertyValueFactory<>("lastRentedBy"));
 
-        Button exportBtn = new Button("Export to PDF");
-        exportBtn.getStyleClass().add("vmt-action-btn");
-        exportBtn.setOnAction(e -> exportReportToPDF());
+        TableColumn<VehicleRentalActivity, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
 
-        reportsTab.getChildren().addAll(title, reportOptions, previewTitle, reportPreview, exportBtn);
+        rentalActivityTable.getColumns().addAll(idCol, nameCol, numberCol, rentalCountCol, totalAmountCol, userCol,
+                statusCol);
+
+        // Fetch and populate data
+        refreshRentalActivityTable(rentalActivityTable);
+
+        Button exportButton = new Button("Export to Excel");
+        exportButton.getStyleClass().add("admin-action-btn");
+        exportButton.setOnAction(_ -> exportRentalActivityToCSV(rentalActivityTable));
+
+        // Add components to the tab
+        reportsTab.getChildren().addAll(title, rentalActivityTable, exportButton);
         return reportsTab;
     }
+
+    private void refreshRentalActivityTable(TableView<VehicleRentalActivity> table) {
+        ObservableList<VehicleRentalActivity> rentalActivities = FXCollections.observableArrayList();
+
+        // Fetch all vehicles
+        List<Vehicle> vehicles = VehicleDAO.getAllVehicles();
+
+        for (Vehicle vehicle : vehicles) {
+            // Fetch rental data for the vehicle
+            int rentalCount = RentalsDAO.getRentalCountByVehicleId(vehicle.getId());
+            double totalAmount = RentalsDAO.getTotalAmountByVehicleId(vehicle.getId());
+            String lastRentedBy = RentalsDAO.getLastRentedUserByVehicleId(vehicle.getId());
+
+            // Create a VehicleRentalActivity object
+            VehicleRentalActivity activity = new VehicleRentalActivity(
+                    vehicle.getId(),
+                    vehicle.getBrand(),
+                    vehicle.getNumber(),
+                    rentalCount,
+                    totalAmount,
+                    lastRentedBy,
+                    vehicle.getStatus());
+
+            rentalActivities.add(activity);
+        }
+
+        table.setItems(rentalActivities);
+    }
+
+private void exportRentalActivityToCSV(TableView<VehicleRentalActivity> table) {
+    FileChooser fileChooser = new FileChooser();
+    fileChooser.setTitle("Export Vehicle Rental Activity");
+    fileChooser.setInitialFileName("VehicleRentalReport.csv");
+    fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+    File file = fileChooser.showSaveDialog(null); // or use rootLayout.getScene().getWindow()
+
+    if (file != null) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+            // Write the header row
+            writer.write("Vehicle ID,Vehicle Name,Vehicle Number,Rental Count,Total Amount,Last Rented By,Status");
+            writer.newLine();
+
+            // Write each VehicleRentalActivity as a row
+            for (VehicleRentalActivity activity : table.getItems()) {
+                writer.write(String.format("%d,%s,%s,%d,%.2f,%s,%s",
+                        activity.getVehicleId(),
+                        activity.getVehicleName(),
+                        activity.getVehicleNumber(),
+                        activity.getRentalCount(),
+                        activity.getTotalAmount(),
+                        activity.getLastRentedBy(),
+                        activity.getStatus()));
+                writer.newLine();
+            }
+            // Show success message
+            AlertUtils.showAlert(Alert.AlertType.INFORMATION, "Export Successful", "Rental activity exported successfully to: \n"+ file.getAbsolutePath());
+
+
+        } catch (IOException e) {
+            // Show error message
+            AlertUtils.showAlert(Alert.AlertType.ERROR, "Export Failed", "Failed to export rental activity: " + e.getMessage());
+
+        }
+    }
+}
 
     // Helper methods for operations
     private void refreshVehicleTable(TableView<Vehicle> table) {
@@ -312,18 +376,17 @@ public class VMTController {
         table.setItems(vehicles);
     }
 
-
     private void showAddVehicleDialog() {
         Dialog<Vehicle> dialog = new Dialog<>();
         dialog.setTitle("Add New Vehicle");
         dialog.setHeaderText("Enter vehicle details");
-    
+
         // Set up form fields
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
         grid.setPadding(new Insets(20, 150, 10, 10));
-    
+
         TextField makeField = new TextField();
         makeField.setPromptText("Make");
         TextField modelField = new TextField();
@@ -336,7 +399,7 @@ public class VMTController {
         rateField.setPromptText("Daily Rate");
         TextField imageUrlField = new TextField();
         imageUrlField.setPromptText("Image URL");
-    
+
         grid.add(new Label("Make:"), 0, 0);
         grid.add(makeField, 1, 0);
         grid.add(new Label("Model:"), 0, 1);
@@ -349,88 +412,189 @@ public class VMTController {
         grid.add(rateField, 1, 4);
         grid.add(new Label("Image URL:"), 0, 5);
         grid.add(imageUrlField, 1, 5);
-    
+
         dialog.getDialogPane().setContent(grid);
-    
+
         // Buttons
         ButtonType addButton = new ButtonType("Add", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(addButton, ButtonType.CANCEL);
-    
+
         // Result conversion
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == addButton) {
                 try {
                     String type = typeCombo.getValue();
                     if (type == null) {
-                        showAlert("Input Error", "Please select a vehicle type.");
+                        // showAlert("Input Error", "Please select a vehicle type.");
+                        AlertUtils.showAlert(Alert.AlertType.ERROR, "Input Error", "Please select a vehicle type.");
+
                         return null;
                     }
-    
+
                     int year = Integer.parseInt(yearField.getText());
                     double rate = Double.parseDouble(rateField.getText());
-    
+
                     switch (type) {
                         case "Car":
                             return new Car(
-                                0, // ID will be generated by the database
-                                type,
-                                makeField.getText() + " " + modelField.getText(),
-                                year,
-                                rate,
-                                "ABC123", // Placeholder for vehicle number
-                                imageUrlField.getText(),
-                                "Available", // Default status
-                                "Details" // Placeholder for details
+                                    0, // ID will be generated by the database
+                                    type,
+                                    makeField.getText() + " " + modelField.getText(),
+                                    year,
+                                    rate,
+                                    "ABC123", // Placeholder for vehicle number
+                                    imageUrlField.getText(),
+                                    "Available", // Default status
+                                    "Details" // Placeholder for details
                             );
                         case "Bike":
                             return new Bike(
-                                0,
-                                type,
-                                makeField.getText() + " " + modelField.getText(),
-                                year,
-                                rate,
-                                "ABC123",
-                                imageUrlField.getText(),
-                                "Available",
-                                "Details"
-                            );
+                                    0,
+                                    type,
+                                    makeField.getText() + " " + modelField.getText(),
+                                    year,
+                                    rate,
+                                    "ABC123",
+                                    imageUrlField.getText(),
+                                    "Available",
+                                    "Details");
                         case "ElectricVehicle":
                             return new ElectricVehicle(
-                                0,
-                                type,
-                                makeField.getText() + " " + modelField.getText(),
-                                year,
-                                rate,
-                                "ABC123",
-                                imageUrlField.getText(),
-                                "Available",
-                                "Details"
-                            );
+                                    0,
+                                    type,
+                                    makeField.getText() + " " + modelField.getText(),
+                                    year,
+                                    rate,
+                                    "ABC123",
+                                    imageUrlField.getText(),
+                                    "Available",
+                                    "Details");
                         default:
-                            showAlert("Input Error", "Invalid vehicle type.");
+                            // showAlert("Input Error", "Invalid vehicle type.");
+                            AlertUtils.showAlert(Alert.AlertType.ERROR, "Input Error", "Invalid vehicle type.");
                             return null;
                     }
                 } catch (NumberFormatException e) {
-                    showAlert("Input Error", "Please enter valid numbers for year and rate.");
+                    // showAlert("Input Error", "Please enter valid numbers for year and rate.");
+                    AlertUtils.showAlert(Alert.AlertType.ERROR, "Input Error", "Please enter valid numbers for year and rate.");
+
                     return null;
                 }
             }
             return null;
         });
-    
+
         Optional<Vehicle> result = dialog.showAndWait();
         result.ifPresent(vehicle -> {
             vehicleDAO.addVehicle(vehicle);
             refreshVehicleTable((TableView<Vehicle>) ((ScrollPane) ((TabPane) rootLayout.getCenter())
-                .getTabs().get(0).getContent()).getContent());
+                    .getTabs().get(0).getContent()).getContent());
         });
     }
-    private void showEditVehicleDialog(Vehicle vehicle) {
-        // Similar to add dialog but pre-populated with vehicle data
-        // Implementation would follow similar pattern as showAddVehicleDialog()
+
+    // Method to show the edit vehicle dialog
+    private void showEditVehicleDialog(Vehicle vehicle, TableView<Vehicle> vehicleTable) {
+        Dialog<Vehicle> dialog = new Dialog<>();
+        dialog.setTitle("Edit Vehicle");
+        dialog.setHeaderText("Edit details for " + vehicle.getType() + ": " + vehicle.getDetails());
+
+        // Set up form fields
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField makeField = new TextField(vehicle.getMake());
+        makeField.setPromptText("Make");
+
+        TextField modelField = new TextField(vehicle.getBrand());
+        modelField.setPromptText("Model");
+
+        TextField yearField = new TextField(String.valueOf(vehicle.getYear()));
+        yearField.setPromptText("Year");
+
+        TextField rateField = new TextField(String.valueOf(vehicle.getPrice()));
+        rateField.setPromptText("Daily Rate");
+
+        TextField numberField = new TextField(String.valueOf(vehicle.getNumber()));
+        rateField.setPromptText("Vehicle Number");
+
+        TextField imageField = new TextField(String.valueOf(vehicle.getImagePath()));
+        rateField.setPromptText("Image Path");
+        TextField detailsField = new TextField(String.valueOf(vehicle.getDetails()));
+        rateField.setPromptText("Vehicle Details");
+
+        ComboBox<String> statusCombo = new ComboBox<>();
+        statusCombo.getItems().addAll("Available", "Maintenance");
+        statusCombo.setValue(vehicle.getStatus());
+
+        // grid.add(new Label("Make:"), 0, 0);
+        // grid.add(makeField, 1, 0);
+        grid.add(new Label("Model:"), 0, 0);
+        grid.add(modelField, 1, 0);
+        grid.add(new Label("Year:"), 0, 1);
+
+        grid.add(yearField, 1, 1);
+        grid.add(new Label("Daily Rate:"), 0, 2);
+        grid.add(rateField, 1, 2);
+        grid.add(new Label("Vehicle Number: "), 0, 3);
+        grid.add(numberField, 1, 3);
+        grid.add(new Label("Image Path : "), 0, 4);
+        grid.add(imageField, 1, 4);
+        grid.add(new Label("vehicle Details : "), 0, 5);
+        grid.add(detailsField, 1, 5);
+        // Add label and combo box to the grid at row 6
+        grid.add(new Label("Vehicle Status:"), 0, 6);
+        grid.add(statusCombo, 1, 6);
+
+        dialog.getDialogPane().setContent(grid);
+
+        // Buttons
+        ButtonType saveButton = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButton, ButtonType.CANCEL);
+
+        // Result conversion
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == saveButton) {
+                try {
+                    // vehicle.setMake(makeField.getText());
+                    vehicle.setBrand(modelField.getText());
+                    vehicle.setYear(Integer.parseInt(yearField.getText()));
+                    vehicle.setPrice(Double.parseDouble(rateField.getText()));
+                    vehicle.setNumber(numberField.getText());
+                    vehicle.setPrice(Double.parseDouble(rateField.getText()));
+                    vehicle.setImagePath(imageField.getText());
+                    vehicle.setPrice(Double.parseDouble(rateField.getText()));
+                    vehicle.setDetails(detailsField.getText());
+                    vehicle.setStatus(statusCombo.getValue());
+                    return vehicle;
+                } catch (NumberFormatException e) {
+                    AlertUtils.showAlert(Alert.AlertType.ERROR, "Input Error", "Please enter valid numbers for year and rate.");
+                    return null;
+                }
+            }
+            return null;
+        });
+
+        Optional<Vehicle> result = dialog.showAndWait();
+        result.ifPresent(updatedVehicle -> {
+            boolean success = vehicleDAO.updateVehicle(updatedVehicle);
+            if (success) {
+                // Show success message
+                AlertUtils.showAlert(Alert.AlertType.INFORMATION, "Update Successful", "Vehicle details updated successfully.");
+                refreshVehicleTable(vehicleTable); // Refresh the table directly
+            } else {
+                // show error
+                // Show error message
+                AlertUtils.showAlert(Alert.AlertType.ERROR,"Error","Failed to update vehicle details. Please try again.");
+
+            }
+        });
     }
 
     private void confirmAndRemoveVehicle(Vehicle vehicle, TableView<Vehicle> table) {
+
+       
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Confirm Removal");
         alert.setHeaderText("Remove Vehicle: " + vehicle.getMake() + " " + vehicle.getModel());
@@ -443,30 +607,13 @@ public class VMTController {
         }
     }
 
-   
-
-    private void generateReport(String reportType, LocalDate fromDate, LocalDate toDate) {
-        // Implementation would use ReportGenerator service
-        // and update the report preview area
-    }
-
-    private void exportReportToPDF() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Save Report");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
-        File file = fileChooser.showSaveDialog(rootLayout.getScene().getWindow());
-        if (file != null) {
-            // Implementation would use ReportGenerator to export to PDF
-        }
-    }
-
-    private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
+    // private void showAlert(String title, String message) {
+    //     Alert alert = new Alert(Alert.AlertType.WARNING);
+    //     alert.setTitle(title);
+    //     alert.setHeaderText(null);
+    //     alert.setContentText(message);
+    //     alert.showAndWait();
+    // }
 
     private void handleLogout() {
         AppNavigator.loadView(new LoginController().getView(new BorderPane()));

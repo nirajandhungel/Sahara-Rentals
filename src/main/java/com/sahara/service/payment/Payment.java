@@ -1,5 +1,7 @@
 package com.sahara.service.payment;
 
+import java.sql.Timestamp;
+
 public interface Payment {
     int getId();
     int getRentalId();
@@ -7,7 +9,7 @@ public interface Payment {
     String getVehicleName();
     double getAmount();
     String getPaymentMethod();
-    String getPaymentDate();
+    Timestamp getPaymentDate();
     String getStatus();
     String getProcessedBy();
 
@@ -17,7 +19,7 @@ public interface Payment {
     void setVehicleName(String vehicleName);
     void setAmount(double amount);
     void setPaymentMethod(String paymentMethod);
-    void setPaymentDate(String paymentDate);
+    void setPaymentDate(Timestamp paymentDate);
     void setStatus(String status);
     void setProcessedBy(String processedBy);
 }

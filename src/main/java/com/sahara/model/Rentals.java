@@ -2,6 +2,8 @@ package com.sahara.model;
 
 import java.sql.Timestamp;
 
+import com.sahara.repository.VehicleDAO;
+
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
@@ -41,7 +43,7 @@ public class Rentals {
     }
 
     public int getVehicleId() {
-        return userId;
+        return vehicleId;
     }
 
     public String getVehicleName() {
@@ -103,6 +105,11 @@ public class Rentals {
     public void setVehicleImagePath(String vehicleImagePath) {
         this.vehicleImagePath = vehicleImagePath;
     }
+
+    public Vehicle getVehicle() {
+    // Fetch the vehicle from the database using the vehicleId
+    return VehicleDAO.getVehicleById(vehicleId);
+}
    
     
 
@@ -115,15 +122,11 @@ public class Rentals {
         return new SimpleObjectProperty<>(returnDate);
     }
 
-    // Additional methods for `UserController`
-    public Vehicle getVehicle() {
-        return new Vehicle(id, "Car", vehicleName, 2020, totalCost, "ABC123", vehicleImagePath, status, "Details") {
-            @Override
-            public double calculateRentalPrice(int days) {
-                return getPrice() * days;
-            }
-        };
-    }
+    // // Additional methods for `UserController`
+    // public Vehicle getVehicleByRentalID(int id) {
+
+        
+    // }
 
     public Timestamp startDate() {
         return getRentalDate();

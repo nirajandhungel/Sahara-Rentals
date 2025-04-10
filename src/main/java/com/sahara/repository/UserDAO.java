@@ -87,5 +87,21 @@ public class UserDAO {
 
         return users; // Return list of users (could be empty if no users exist)
     }
+
+
+    public static boolean deleteUserById(String userId) {
+        String query = "DELETE FROM users WHERE id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+    
+            stmt.setString(1, userId);
+    
+            int rowsDeleted = stmt.executeUpdate();
+            return rowsDeleted > 0;
+        } catch (SQLException e) {
+            System.err.println("Error deleting user: " + e.getMessage());
+            return false;
+        }
+    }
 }
 

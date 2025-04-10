@@ -194,15 +194,18 @@ public class RentalsDAO {
 
     public static boolean updateRentalsStatus(Rentals rental) {
         String query = "UPDATE rentals SET status = ? WHERE id = ?";
-    
+        
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-    
+            
             stmt.setString(1, rental.getStatus());
+            // stmt.setTimestamp(2, Timestamp.valueOf(rental.getReturnDate().toLocalDateTime().toLocalDate().atStartOfDay()));
+            // stmt.setDouble(3, rental.getTotalCost());
             stmt.setInt(2, rental.getId());
-    
-          stmt.executeUpdate();
-            return true;
+            
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+            
         } catch (SQLException e) {
             System.err.println("Error updating rental: " + e.getMessage());
             return false;
@@ -256,5 +259,55 @@ public class RentalsDAO {
             System.err.println("Error fetching rental by ID: " + e.getMessage());
         }
         return null;
+    }
+
+
+
+    public static int getRentalCountByVehicleId(int vehicleId) {
+        String query = "SELECT COUNT(*) FROM rentals WHERE vehicle_id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+    
+            stmt.setInt(1, vehicleId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching rental count: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    public static double getTotalAmountByVehicleId(int vehicleId) {
+        String query = "SELECT SUM(total_cost) FROM rentals WHERE vehicle_id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+    
+            stmt.setInt(1, vehicleId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getDouble(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching total amount: " + e.getMessage());
+        }
+        return 0.0;
+    }
+
+    public static String getLastRentedUserByVehicleId(int vehicleId) {
+        String query = "SELECT u.username FROM rentals r JOIN users u ON r.user_id = u.id WHERE r.vehicle_id = ? ORDER BY r.rental_date DESC LIMIT 1";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+    
+            stmt.setInt(1, vehicleId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("username");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching last rented user: " + e.getMessage());
+        }
+        return "N/A";
     }
 }

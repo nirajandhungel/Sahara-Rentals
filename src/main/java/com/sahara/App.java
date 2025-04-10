@@ -1,7 +1,7 @@
 package com.sahara;
 
 import com.sahara.config.AppConfig;
-import com.sahara.view.controller.LoginController;
+import com.sahara.view.controller.HomePage;
 import com.sahara.view.util.AppNavigator;
 
 import javafx.application.Application;
@@ -56,13 +56,15 @@ public class App extends Application {
 
 
             // Load initial view
-            AppNavigator.loadView(new LoginController().getView(rootLayout));
+            AppNavigator.loadView(new HomePage().getView(rootLayout));
 
             // Create scene and show stage
             Scene scene = new Scene(rootLayout, 1000, 700);
             scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
 
             primaryStage.setScene(scene);
+            primaryStage.setMaximized(true); // Maximize the window
+
             primaryStage.show();
 
         } catch (Exception e) {
