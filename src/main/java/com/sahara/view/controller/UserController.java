@@ -102,7 +102,7 @@ public class UserController {
         topBar.setAlignment(Pos.CENTER_LEFT);
         // topBar.setStyle("-fx-background-color: #ffffff;");
 
-        // Logo/Title
+        // Logo/Title this is logo
         ImageView logo = new ImageView(new Image("sahara-icon.png"));
         logo.setFitHeight(40);
         logo.setPreserveRatio(true);
