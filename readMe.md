@@ -36,7 +36,7 @@ This is a JavaFX-based application for managing vehicle rentals. It includes fea
 ### **Using an IDE (e.g., IntelliJ, Eclipse, VS Code):**
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/vehicle_rental_system.git
+   git clone https://github.com/nirajandhungel/vehicle_rental_system.git
    cd vehicle_rental_system
 
 
