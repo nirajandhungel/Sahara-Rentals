@@ -68,34 +68,16 @@ Manage users and vehicles.
 
 ### 🧍 Customer Dashboard
 
-
 <img width="1380" height="707" src="https://github.com/user-attachments/assets/9b627683-4383-4a2d-8a7c-f87575ea13e6" />
 <img width="1361" height="995" src="https://github.com/user-attachments/assets/57c51942-012f-4c9e-b9b0-c5c660f71bac" />
 <img width="1369" height="1018" src="https://github.com/user-attachments/assets/10710d89-f71e-4398-a318-d53810d06751" />
-
 
 ---
 
 ### 🧑‍💼 Admin Dashboard
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-1. Press  : Ctrl + ,
-
-2. Search : CSS > Lint: Vendor Prefix
-
-3. Select : ignore
+<img width="1380" height="707" src="https://github.com/user-attachments/assets/493b9554-0fd2-40c7-a714-a41fb52da36e" />
+<img width="1361" height="995" src="https://github.com/user-attachments/assets/d985c25c-0912-4740-898d-f85ffb8a551e" />
+<img width="1369" height="1018" src="https://github.com/user-attachments/assets/3badd0f2-3aed-42ab-a2fa-b9c53aa73db8" />
+<img width="1369" height="1018" src="https://github.com/user-attachments/assets/db5db560-b99b-4735-b6b0-3d7b0b62884f" />
