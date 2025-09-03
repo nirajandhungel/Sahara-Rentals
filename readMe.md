@@ -38,6 +38,8 @@ This is a JavaFX-based application for managing vehicle rentals. It includes fea
    ```bash
    git clone git clone https://github.com/nirajandhungel/Sahara-Rentals.git
    cd Sahara-Rentals
+   mvn clean install
+   mvn exec:java
 
 
 
