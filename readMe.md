@@ -81,3 +81,10 @@ Manage users and vehicles.
 <img width="1361" height="995" src="https://github.com/user-attachments/assets/d985c25c-0912-4740-898d-f85ffb8a551e" />
 <img width="1369" height="1018" src="https://github.com/user-attachments/assets/3badd0f2-3aed-42ab-a2fa-b9c53aa73db8" />
 <img width="1369" height="1018" src="https://github.com/user-attachments/assets/db5db560-b99b-4735-b6b0-3d7b0b62884f" />
+
+---
+
+### 🧑‍💼 Vehicle Management Team
+
+<img width="1380" height="707" src="https://github.com/user-attachments/assets/c002a8e9-220c-46c3-8d4d-1944404aa0e0" />
+<img width="1361" height="995" src="https://github.com/user-attachments/assets/24524bf0-c5dd-48b6-9b78-796572410ae1" />
